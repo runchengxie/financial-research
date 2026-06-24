@@ -121,9 +121,9 @@ def _section_pe_pb_divergence(lines: list[str], report: pd.DataFrame) -> None:
     lines.append("")
     lines.append("PE 与 PB 分位不一致时，估值信号的含义不同：")
     lines.append("")
-    lines.append("- **多重扩张**（PE 和 PB 均 > p90）：市场定价繁荣，估值容错空间极小。")
-    lines.append("- **利润压缩型**（PE > p90 但 PB 正常）：高 PE 来自利润处于周期底部，利润恢复后 PE 自然回落，可能是低估信号。")
-    lines.append("- **资产重估型**（PB > p90 但 PE 正常）：资产已被重估但利润尚未跟上，需验证利润能否兑现。")
+    lines.append("- 多重扩张（PE 和 PB 均 > p90）：市场定价繁荣，估值容错空间极小。")
+    lines.append("- 利润压缩型（PE > p90 但 PB 正常）：高 PE 来自利润处于周期底部，利润恢复后 PE 自然回落，可能是低估信号。")
+    lines.append("- 资产重估型（PB > p90 但 PE 正常）：资产已被重估但利润尚未跟上，需验证利润能否兑现。")
     lines.append("")
 
     patterns = report[report["pe_pb_pattern"].notna()]
