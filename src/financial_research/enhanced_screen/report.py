@@ -1,7 +1,7 @@
 """Markdown report generation for enhanced screening.
 
 Consumes the merged report DataFrame and produces the markdown string
-written to enhanced-screening-report.md.
+written to docs/research/enhanced-screening-report.md.
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ def generate_report(report: pd.DataFrame) -> str:
     Returns
     -------
     str
-        Markdown content for enhanced-screening-report.md.
+        Markdown content for docs/research/enhanced-screening-report.md.
     """
     ref_date = get_reference_date()
     margin_date = get_margin_date()
@@ -56,6 +56,7 @@ def _header(lines: list[str], ref_date: str, margin_date: str, fin_date: str) ->
     lines.append("- 现金流质量 = 经营活动现金流净额 / 归母净利润。Q1 为单季，FY 为全年。比率持续 < 0.5 需警惕利润质量。")
     lines.append("- 融资拥挤度 = 融资余额 / 流通市值。> 3% 为较高杠杆，> 5% 为拥挤。")
     lines.append("- 背离标签表示市场行为存在矛盾（如热度高但资金流出），共识标签表示多维度信号一致。")
+    lines.append("- 沪深港通 Top10 天数仅表示进入每日十大成交的次数，不表示净买入、持仓变化或投资者身份。")
     lines.append("")
 
 
@@ -197,7 +198,7 @@ def _section_ar_inventory(lines: list[str], report: pd.DataFrame) -> None:
             inv_y = f"{r['inv_yoy'] * 100:.0f}%" if pd.notna(r.get("inv_yoy")) else "N/A"
             ar_r = f"{r.get('ar_to_rev', 0):.2f}" if pd.notna(r.get("ar_to_rev")) else "N/A"
             inv_r = f"{r.get('inv_to_rev', 0):.2f}" if pd.notna(r.get("inv_to_rev")) else "N/A"
-            lines.append(f"| {r['company']} | {r['priority']} | {ar_y} | {inv_y} | {ar_r} | {inv_r} | {r.get('bs_warning', '')} |")
+            lines.append(f"| {r['company']} | {r['priority']} | {ar_y} | {inv_y} | {ar_r} | {inv_r} | {_md_cell(r.get('bs_warning', ''))} |")
         lines.append("")
 
 
@@ -234,25 +235,25 @@ def _section_divergence(lines: list[str], report: pd.DataFrame) -> None:
         lines.append("")
         lines.append("背离信号提示市场行为存在矛盾，往往是预期差的来源。")
         lines.append("")
-        lines.append("| 公司 | 优先级 | 背离标签 | 热榜天 | 净流入(亿) | 北向天 | 融资变化(亿) |")
+        lines.append("| 公司 | 优先级 | 背离标签 | 热榜天 | 净流入(亿) | 沪深港通 Top10 天 | 融资变化(亿) |")
         lines.append("| --- | --- | --- | ---: | ---: | ---: | ---: |")
         for _, r in diverge.iterrows():
             nf = f"{r.get('net_flow_yi', 0):.1f}"
             md = f"{r.get('margin_delta_yi', 0):.1f}"
-            lines.append(f"| {r['company']} | {r['priority']} | {r['diverge_tags']} | {r['hot_days']} | {nf} | {r['hsgt_days']} | {md} |")
+            lines.append(f"| {r['company']} | {r['priority']} | {_md_cell(r['diverge_tags'])} | {r['hot_days']} | {nf} | {r['hsgt_days']} | {md} |")
         lines.append("")
 
     consensus = report[report["consensus_tags"].notna() & (report["consensus_tags"] != "")]
     if not consensus.empty:
-        lines.append("### 极度拥挤共识（多维度信号一致看多）")
+        lines.append("### 多维交易活跃（热榜、沪深港通 Top10 与融资信号同时出现）")
         lines.append("")
-        lines.append("共识拥挤不等于看空，但意味着预期差空间被压缩，需做估值反推。")
+        lines.append("交易活跃不代表净买入或看多，但意味着预期差空间可能被压缩，需做估值反推。")
         lines.append("")
-        lines.append("| 公司 | 优先级 | 共识标签 | 热榜天 | 北向天 | 融资变化(亿) | PE 3Y 分位 |")
+        lines.append("| 公司 | 优先级 | 共识标签 | 热榜天 | 沪深港通 Top10 天 | 融资变化(亿) | PE 3Y 分位 |")
         lines.append("| --- | --- | --- | ---: | ---: | ---: | --- |")
         for _, r in consensus.iterrows():
             md = f"{r.get('margin_delta_yi', 0):.1f}"
-            lines.append(f"| {r['company']} | {r['priority']} | {r['consensus_tags']} | {r['hot_days']} | {r['hsgt_days']} | {md} | {r.get('pe_3y_level', '')} |")
+            lines.append(f"| {r['company']} | {r['priority']} | {_md_cell(r['consensus_tags'])} | {r['hot_days']} | {r['hsgt_days']} | {md} | {r.get('pe_3y_level', '')} |")
         lines.append("")
 
 
@@ -287,7 +288,7 @@ def _section_ranking(lines: list[str], report: pd.DataFrame) -> None:
         tags = dtags
         if ctags:
             tags += (" | " if tags else "") + ctags
-        lines.append(f"| {i + 1} | {name} | {pri} | {sc} | {tags} |")
+        lines.append(f"| {i + 1} | {name} | {pri} | {sc} | {_md_cell(tags)} |")
     lines.append("")
 
 
@@ -316,6 +317,13 @@ def _fmt_yi(row: pd.Series, col: str) -> str:
     """Format as 亿 (divide by 1e8)."""
     val = row.get(col)
     return f"{val / 1e8:.2f}" if pd.notna(val) else "N/A"
+
+
+def _md_cell(value: object) -> str:
+    """Escape text that would otherwise add cells to a Markdown table."""
+    if value is None:
+        return ""
+    return str(value).replace("|", "\\|").replace("\n", "<br>")
 
 
 def _cf_assess(ratio: float) -> str:

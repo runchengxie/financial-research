@@ -8,10 +8,10 @@ Run with the market-data-platform venv:
 import sys
 from pathlib import Path
 
-# Ensure the scripts dir is importable
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+# Use the source package without requiring an editable installation.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from enhanced_screen import data
+from financial_research.enhanced_screen import data, report
 
 PASS = 0
 FAIL = 0
@@ -76,6 +76,12 @@ def test_compute_divergence_signals() -> None:
               f"max={df['net_flow_yi'].abs().max()}")
 
 
+def test_markdown_cell_escaping() -> None:
+    print("markdown cell escaping")
+    check("pipe is escaped", report._md_cell("标签甲 | 标签乙") == "标签甲 \\| 标签乙")
+    check("new line is normalized", report._md_cell("标签甲\n标签乙") == "标签甲<br>标签乙")
+
+
 def main() -> None:
     print("Enhanced Screen Smoke Tests")
     print("=" * 50)
@@ -85,6 +91,7 @@ def main() -> None:
         test_config,
         test_compute_current_valuation,
         test_compute_divergence_signals,
+        test_markdown_cell_escaping,
     ]:
         try:
             fn()

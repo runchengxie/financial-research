@@ -1,7 +1,7 @@
 """Enhanced screening: PE/PB percentiles, cash flow quality, margin crowding, divergence signals.
 
 Reads from market-data-platform data assets and the hotspot CSV.
-Output: enhanced-screening-report.md in the repo root.
+Output: docs/research/enhanced-screening-report.md.
 
 Usage:
     cd ~/code/research-workspace/market-data-platform
@@ -75,7 +75,7 @@ def main() -> None:
 
     # Generate report
     md = report.generate_report(rpt)
-    out_path = data.REPO_ROOT / "enhanced-screening-report.md"
+    out_path = data.REPO_ROOT / "docs/research/enhanced-screening-report.md"
     out_path.write_text(md, encoding="utf-8")
 
     # Summary

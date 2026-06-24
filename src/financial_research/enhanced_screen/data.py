@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 
 # ── config ────────────────────────────────────────────────────────
 
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-CSV_PATH = REPO_ROOT / "company-hotspot-data.csv"
+REPO_ROOT = Path(__file__).resolve().parents[3]
+CSV_PATH = REPO_ROOT / "data/company-hotspot-data.csv"
 
 DATA_ROOT = Path(
     os.environ.get(
@@ -420,12 +420,15 @@ def compute_divergence_signals(companies: pd.DataFrame) -> pd.DataFrame:
             diverge_reasons.append("高热度+大额净流出")
         elif hot_days >= 20 and net_flow_yuan < -5e8:
             diverge_reasons.append("高热度+净流出")
+        # `hsgt_top10_days` only records appearances in the daily top-10
+        # trading list. It has no net-buy or holding-change direction, so it
+        # must not be described as accumulation or as an investor identity.
         if hsgt_days >= 20 and hot_days <= 10:
-            diverge_reasons.append("北向安静吸筹")
+            diverge_reasons.append("沪深港通 Top10 活跃、热榜较低")
         elif hsgt_days >= 30 and hot_days <= 20:
-            diverge_reasons.append("北向活跃远超热榜")
+            diverge_reasons.append("沪深港通 Top10 显著高于热榜")
         if hot_days >= 30 and hsgt_days <= 5:
-            diverge_reasons.append("纯内资热度")
+            diverge_reasons.append("热榜活跃、沪深港通 Top10 较低")
         if margin_delta > 1e10 and net_flow_yuan < -1e9:
             diverge_reasons.append("杠杆增仓+资金流出")
         if limit_events >= 5 and hot_days <= 5:
@@ -433,7 +436,7 @@ def compute_divergence_signals(companies: pd.DataFrame) -> pd.DataFrame:
 
         consensus_reasons = []
         if hot_days >= 30 and hsgt_days >= 20:
-            consensus_reasons.append("极度拥挤共识")
+            consensus_reasons.append("热榜与沪深港通 Top10 同时活跃")
 
         signals.append({
             "ts_code": code,
