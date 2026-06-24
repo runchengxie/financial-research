@@ -15,7 +15,7 @@
 - 涨停明细（新增）：来源为 `limit_list_ths` 接口，每条包含交易日期、股票代码、涨跌停类型、连板次数、首次/末次封板时间和标签。数据已按 `trade_date` 分区存储在 `assets/tushare/a_share/limit_list_ths/`。
 - 资金流（新增）：来源为 `moneyflow_ths`，字段包括净流入（万元）、超大单/大单/中单/小单买卖金额。已按 `trade_date` 分区存储在 `assets/tushare/a_share/moneyflow_ths/`。
 - 来源等级：B / 数据服务商。数据来自 TuShare 的同花顺热点、指数目录、涨停明细和资金流接口；热点和涨停的 `concept`、`rank_reason`、`tag`、`theme` 属平台标签/摘要，须以交易所公告、财报或公司披露（A 级）复核，不能直接当作业务事实。
-- 可复用数据：[机器可读明细](company-hotspot-data.csv)，含每家公司的完整概念快照、全部命中日期、排名与热度值。
+- 可复用数据：[机器可读明细](../../data/company-hotspot-data.csv)，含每家公司的完整概念快照、全部命中日期、排名与热度值。
 
 ## 样本级信号
 

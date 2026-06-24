@@ -1,102 +1,87 @@
 # 金融研报核验仓库（电子行业 80 家样本）
 
-本仓库将一份 26Q2 电子行业卖方研报转成可复核的文本与数据资产，支持多轮自动化核验。当前覆盖 80 家公司，含 75 家 A 股和 5 家港股。
+本仓库将一份 26Q2 电子行业卖方研报转为可复核的研究资产。它提供原始预期、财务与估值初筛、市场行为核验、专题比较和单公司深研模板；不将研报预测、概念标签或交易活跃度直接视为投资结论。
 
-## 当前文件与职责
+## 目录结构
 
-### 核心分析文档
-
-- `company-analysis-todo.md`
-  主研究清单，含 P0/P1 优先级、深度研究任务模板与完成记录。模板已升级为 9 节，包含「市场共识与分歧」模块。
-- `company-analysis-initial-screen.md`
-  第一轮定量核验，覆盖行情、估值、最新财报和港股一手披露。说明数据口径、缺失情况和待核验项。
-- `company-hotspot-analysis.md`
-  热点与资金流分析底稿，包含热榜、涨停、资金流、北向、融资数据和概念快照。已加入背离信号框架。
-- `enhanced-screening-report.md`
-  增强初筛报告（由脚本自动生成）。覆盖 PE/PB 历史分位、PE/PB 背离分类、现金流质量、应收存货趋势、融资拥挤度和背离信号检测。
-- `original-analytic-report.md`
-  原始研报提取文本，保留原文结构和预测数字，用于与新核验结果对照。
-
-### 数据与脚本
-
-- `company-hotspot-data.csv`
-  机器可读明细，含每家公司的概念快照、热榜命中日期、涨停次数、资金流和融资变化。
-- `scripts/enhanced_screen/`
-  增强初筛包，包含 `data.py`（计算函数）、`report.py`（报告生成）、`__init__.py`（入口编排）。
-- `scripts/enhanced_screen.py`
-  薄入口脚本，直接调用 `enhanced_screen` 包。
-- `scripts/test_enhanced_screen.py`
-  冒烟测试，验证数据加载和核心计算函数。
-- `scripts/chart_hotspot.py`
-  热度可视化脚本，读取 `company-hotspot-data.csv` 生成 SVG 图表，输出 `charts/hotspot-dashboard.html`。
-- `charts/hotspot-dashboard.html`
-  最近一次可视化仪表盘。
-
-### 说明文件
-
-- `AGENTS.md`
-  文档写作规范与维护公约。
-- `README.md`
-  当前文件，说明项目范围、运行方式与核验流程。
-- `docs/README.md`
-  文档目录索引。
-
-## 数据来源
-
-增强初筛涉及的数据资产均在 market-data-platform 内持久化，来源如下：
-
-| 数据 | 平台资产 | TuShare 接口 |
-| --- | --- | --- |
-| 历史日线估值（PE/PB/市值） | `daily_basic` | `daily_basic` |
-| 标准化财务报表（利润/现金流/资产负债） | `normalized_fundamentals` | `income` / `cashflow` / `balancesheet` |
-| 融资融券明细 | `margin_detail` | `margin_detail` |
-| 同花顺热榜 | `ths_hot` | `ths_hot` |
-| 同花顺涨停明细 | `limit_list_ths` | `limit_list_ths` |
-| 同花顺资金流 | `moneyflow_ths` | `moneyflow_ths` |
-| 同花顺概念指数 | `ths_index` | `ths_index` |
-| 沪深港通十大成交 | `hsgt_top10` | `hsgt_top10` |
-
-部分概念成分数据受限于代理接口不支持过滤查询，沿用初版 CSV 快照。
-
-## 运行方式
-
-### 增强初筛
-
-从 market-data-platform 的 venv 运行，需要 `pandas`、`pyarrow`：
-
-```bash
-cd ~/code/research-workspace/market-data-platform
-uv run --extra dev python ~/code/financial-research/scripts/enhanced_screen.py
+```text
+docs/
+  archive/       原始研报文本与截图
+  research/      研究地图、专题底稿、初筛与热点分析
+data/            可随仓库分发的输入数据
+src/financial_research/
+                 可复用的初筛、仪表盘与打包逻辑
+scripts/         兼容命令入口与冒烟测试
+artifacts/       可再生 HTML 等输出
 ```
 
-输出为仓库根目录的 `enhanced-screening-report.md`。
+## 核心文档
 
-### 冒烟测试
+- [`docs/archive/original-analytic-report.md`](docs/archive/original-analytic-report.md)
+  原始研报提取文本，保留当时预测数字，只作为待核验假设。
+- [`docs/research/company-analysis-todo.md`](docs/research/company-analysis-todo.md)
+  80 家公司研究清单、单公司深研模板与完成记录。
+- [`docs/research/company-analysis-initial-screen.md`](docs/research/company-analysis-initial-screen.md)
+  第一轮行情、估值、财务和港股披露核验。
+- [`docs/research/company-hotspot-analysis.md`](docs/research/company-hotspot-analysis.md)
+  热榜、涨停、资金流、沪深港通 Top10 交易活跃度与融资数据的口径说明。
+- [`docs/research/enhanced-screening-report.md`](docs/research/enhanced-screening-report.md)
+  自动生成的估值分位、现金流、营运资本、融资与背离信号报告。
+- [`docs/research/research-map.md`](docs/research/research-map.md)
+  专题到单公司的研究路由、证据标准与复盘机制。
+- [`docs/research/topic-ccl-ai-pcb.md`](docs/research/topic-ccl-ai-pcb.md)、[`topic-storage-price.md`](docs/research/topic-storage-price.md)、[`topic-advanced-packaging.md`](docs/research/topic-advanced-packaging.md)
+  第一轮专题比较底稿，明确现有证据和待补数据。
+
+完整索引见 [`docs/README.md`](docs/README.md)。
+
+## 数据与代码
+
+- `data/company-hotspot-data.csv`：80 家公司的概念快照、热榜命中、涨停、资金流、沪深港通 Top10 上榜次数和融资变化。
+- `src/financial_research/enhanced_screen/`：增强初筛的计算与 Markdown 生成逻辑。
+- `src/financial_research/hotspot_dashboard.py`：热度仪表盘生成逻辑。
+- `src/financial_research/bundle.py`：可分发 ZIP 包与 SHA-256 清单生成逻辑。
+- `artifacts/hotspot-dashboard.html`：最近一次生成的热点仪表盘。
+
+增强初筛依赖 market-data-platform 中已持久化的 `daily_basic`、`normalized_fundamentals` 与 `margin_detail` 等资产；这些大型外部资产不复制到本仓库。可分发 CSV 与其字段口径见 [热点底稿](docs/research/company-hotspot-analysis.md)。
+
+## 运行与核验
+
+增强初筛与冒烟测试应从 market-data-platform 环境运行：
 
 ```bash
 cd ~/code/research-workspace/market-data-platform
 uv run --extra dev python ~/code/financial-research/scripts/test_enhanced_screen.py
+uv run --extra dev python ~/code/financial-research/scripts/enhanced_screen.py
 ```
 
-### 热度仪表盘
+增强初筛输出到 `docs/research/enhanced-screening-report.md`。
 
-需要 `pandas`：
+生成热点仪表盘：
 
 ```bash
 python scripts/chart_hotspot.py
 ```
 
-输出为 `charts/hotspot-dashboard.html`。未安装 `pandas` 时直接报错退出。
+输出为 `artifacts/hotspot-dashboard.html`。仪表盘把 `hsgt_top10` 解释为「沪深港通 Top10 上榜次数」；它不表示净买入、持仓变化或投资者身份。
 
-### 数据核验
+## 分发项目与数据
 
-读取 `company-hotspot-data.csv` 后，按 `company-hotspot-analysis.md` 的口径说明核对字段和覆盖范围。
+```bash
+python scripts/export_bundle.py \
+  --output-dir /mnt/c/Users/gbyha/Downloads \
+  --name financial-research.zip
+```
 
-## 手工核验清单
+压缩包包含文档、`data/` 内 CSV、源代码、脚本和已生成物，并在 `BUNDLE_MANIFEST.json` 中记录每个文件的 SHA-256。market-data-platform 的外部持久化资产及需要联网刷新的数据不会被打包，清单会明确列出该边界。
 
-仓库暂未接入自动化测试框架。每次更新后建议做以下检查：
+如需让接收者在本地复跑增强初筛，可先预检体积，再显式加入当前所需的五类平台资产：
 
-1. 运行 `python scripts/chart_hotspot.py`，确认仪表盘正常生成。
-2. 抽查 `company-analysis-initial-screen.md` 与 `company-hotspot-analysis.md` 中的字段是否与 `company-hotspot-data.csv` 对齐。
-3. 在原报告假设或市场数据更新后，重新运行 `scripts/enhanced_screen.py` 生成最新初筛报告。
-4. 核对原始来源链接可访问，补充核验日期。
+```bash
+python scripts/export_bundle.py --include-platform-assets --dry-run
+python scripts/export_bundle.py \
+  --output-dir /mnt/c/Users/gbyha/Downloads \
+  --name financial-research-with-data.zip \
+  --include-platform-assets
+```
+
+截至当前数据快照，全量复现包的未压缩输入约为 1.6 GiB。解压后将 `FIN_RESEARCH_DATA_ROOT` 指向包内 `financial-research/platform-data`，再从 market-data-platform 环境运行增强初筛。`*_latest` 资产在包内被展开为普通目录，因此 Windows 用户无需创建符号链接。该模式仍不包含用来刷新同花顺热点、资金流和沪深港通数据的全部上游资产；当前快照由 `data/company-hotspot-data.csv` 提供。
