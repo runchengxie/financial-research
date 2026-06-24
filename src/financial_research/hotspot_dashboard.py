@@ -20,6 +20,13 @@ def load_data():
     df["total_net"] = pd.to_numeric(df["mf_total_net_wan"], errors="coerce").fillna(0)
     df["margin_delta"] = pd.to_numeric(df["margin_delta_rz_wan"], errors="coerce").fillna(0)
     df["hsgt_days"] = pd.to_numeric(df["hsgt_top10_days"], errors="coerce").fillna(0).astype(int)
+    df["average_net"] = pd.to_numeric(df["mf_avg_net_wan"], errors="coerce").fillna(0)
+    df["positive_flow_days"] = pd.to_numeric(df["mf_pos_days"], errors="coerce").fillna(0).astype(int)
+    df["margin_first"] = pd.to_numeric(df["margin_first_rz_wan"], errors="coerce").fillna(0)
+    df["margin_last"] = pd.to_numeric(df["margin_last_rz_wan"], errors="coerce").fillna(0)
+    df["margin_average_buy"] = pd.to_numeric(df["margin_avg_daily_buy"], errors="coerce").fillna(0)
+    df["best_rank"] = pd.to_numeric(df["best_hot_rank"], errors="coerce")
+    df["latest_rank"] = pd.to_numeric(df["latest_hot_rank"], errors="coerce")
     return df
 
 
@@ -235,13 +242,61 @@ def signal_table(df: pd.DataFrame) -> str:
             f"<td>{row['hot_days']}</td>"
             f"<td>{row['limit_events']}</td>"
             f"<td>{row['total_net'] / 1e4:+.1f}</td>"
+            f"<td>{row['average_net'] / 1e4:+.2f}</td>"
+            f"<td>{row['positive_flow_days']}</td>"
             f"<td>{row['hsgt_days']}</td>"
             f"<td>{row['margin_delta'] / 1e8:+.1f}</td>"
             "</tr>"
         )
     return """<table class=\"signal-table\">
-  <thead><tr><th>公司</th><th>热榜天</th><th>涨停</th><th>净流入（亿）</th><th>Top10 天</th><th>融资变化（亿）</th></tr></thead>
+  <thead><tr><th>公司</th><th>热榜天</th><th>涨停</th><th>累计净流入（亿）</th><th>日均（亿）</th><th>正流入天</th><th>Top10 天</th><th>融资变化（亿）</th></tr></thead>
   <tbody>""" + "".join(rows) + "</tbody></table>"
+
+
+def hotspot_detail_table(df: pd.DataFrame) -> str:
+    """Provide exact hot-list and financing context after the chart-led summary."""
+    active = df[df["hot_days"] > 0].nlargest(15, "hot_days")
+    if active.empty:
+        return "<p>无热榜命中记录。</p>"
+    rows = []
+    for _, row in active.iterrows():
+        concepts = str(row.get("hot_entry_concepts") or "").replace("|", "、")
+        if len(concepts) > 42:
+            concepts = concepts[:42] + "…"
+        best_rank = "—" if pd.isna(row["best_rank"]) else f"#{int(row['best_rank'])}"
+        rows.append(
+            "<tr>"
+            f"<td>{escape(str(row['company']))}</td>"
+            f"<td>{row['hot_days']}</td>"
+            f"<td>{escape(str(row.get('first_hot_date') or '—'))}</td>"
+            f"<td>{escape(str(row.get('latest_hot_date') or '—'))}</td>"
+            f"<td>{best_rank}</td>"
+            f"<td>{escape(concepts or '—')}</td>"
+            f"<td>{row['margin_first'] / 1e8:.1f} → {row['margin_last'] / 1e8:.1f}</td>"
+            "</tr>"
+        )
+    return """<table class=\"detail-table\">
+  <thead><tr><th>公司</th><th>热榜天</th><th>首次</th><th>最近</th><th>最佳排名</th><th>命中概念（平台标签）</th><th>融资余额（亿）</th></tr></thead>
+  <tbody>""" + "".join(rows) + "</tbody></table>"
+
+
+def concept_table(df: pd.DataFrame) -> str:
+    """Summarize platform concepts by the number of covered hot companies."""
+    counts: dict[str, int] = {}
+    for concepts in df.loc[df["hot_days"] > 0, "hot_entry_concepts"].dropna():
+        for concept in str(concepts).split("|"):
+            concept = concept.strip()
+            if concept:
+                counts[concept] = counts.get(concept, 0) + 1
+    if not counts:
+        return "<p>无可汇总的命中概念。</p>"
+    top = sorted(counts.items(), key=lambda item: (-item[1], item[0]))[:12]
+    rows = "".join(
+        f"<tr><td>{escape(name)}</td><td>{count}</td></tr>" for name, count in top
+    )
+    return """<table class=\"concept-table\">
+  <thead><tr><th>平台概念</th><th>命中公司数</th></tr></thead>
+  <tbody>""" + rows + "</tbody></table>"
 
 
 def build_html(df, charts):
@@ -251,6 +306,8 @@ def build_html(df, charts):
     max_hot = int(df["hot_days"].max())
     avg_hot = df.loc[df["hot_days"] > 0, "hot_days"].mean()
     total_hsgt = int(df["hsgt_days"].sum())
+    n_limit_companies = int((df["limit_events"] > 0).sum())
+    n_net_inflow = int((df["total_net"] > 0).sum())
 
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
@@ -270,10 +327,11 @@ def build_html(df, charts):
   .chart {{ background: white; border-radius: 8px; padding: 12px; margin-bottom: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }}
   .chart h3 {{ font-size: 0.95rem; margin-bottom: 4px; }}
   .chart .desc {{ font-size: 0.75rem; color: #7f8c8d; margin-bottom: 8px; }}
-  .signal-table {{ width: 100%; border-collapse: collapse; font-size: 0.78rem; }}
-  .signal-table th, .signal-table td {{ padding: 7px 8px; text-align: right; border-bottom: 1px solid #ecf0f1; }}
-  .signal-table th:first-child, .signal-table td:first-child {{ text-align: left; }}
-  .signal-table th {{ color: #7f8c8d; font-weight: 600; }}
+  .signal-table, .detail-table, .concept-table {{ width: 100%; border-collapse: collapse; font-size: 0.78rem; }}
+  .signal-table th, .signal-table td, .detail-table th, .detail-table td, .concept-table th, .concept-table td {{ padding: 7px 8px; text-align: right; border-bottom: 1px solid #ecf0f1; }}
+  .signal-table th:first-child, .signal-table td:first-child, .detail-table th:first-child, .detail-table td:first-child, .detail-table th:nth-child(3), .detail-table td:nth-child(3), .detail-table th:nth-child(4), .detail-table td:nth-child(4), .detail-table th:nth-child(6), .detail-table td:nth-child(6), .concept-table th:first-child, .concept-table td:first-child {{ text-align: left; }}
+  .signal-table th, .detail-table th, .concept-table th {{ color: #7f8c8d; font-weight: 600; }}
+  .table-wrap {{ overflow-x: auto; }}
   .footer {{ font-size: 0.65rem; color: #bdc3c7; margin-top: 16px; text-align: center; }}
 </style>
 </head>
@@ -284,6 +342,8 @@ def build_html(df, charts):
 <div class="stats">
   <div class="stat"><div class="value">{n_hot}<span style="font-size:0.8rem;color:#95a5a6">/{n_total}</span></div><div class="label">曾上热榜</div></div>
   <div class="stat"><div class="value">{total_limit}</div><div class="label">涨停事件</div></div>
+  <div class="stat"><div class="value">{n_limit_companies}</div><div class="label">有涨停公司</div></div>
+  <div class="stat"><div class="value">{n_net_inflow}</div><div class="label">累计净流入为正</div></div>
   <div class="stat"><div class="value">{total_hsgt}</div><div class="label">沪深港通 Top10 上榜天数</div></div>
   <div class="stat"><div class="value">{max_hot}</div><div class="label">最高热榜天数</div></div>
   <div class="stat"><div class="value">{avg_hot:.0f}</div><div class="label">均值热榜天数</div></div>
@@ -297,8 +357,8 @@ def build_html(df, charts):
 
 <div class="chart">
   <h3>需复核的交易信号</h3>
-  <p class="desc">列出热榜、涨停、沪深港通 Top10 与融资变化中至少一项明显的公司。它用于安排核验，不构成交易方向结论。</p>
-  {signal_table(df)}
+  <p class="desc">列出热榜、涨停、沪深港通 Top10、资金流与融资变化中至少一项明显的公司。日均净流入和正流入天数用于判断资金流是否由少数交易日主导；它仍不构成交易方向结论。</p>
+  <div class="table-wrap">{signal_table(df)}</div>
 </div>
 
 <div class="chart">
@@ -311,6 +371,18 @@ def build_html(df, charts):
   <h3>热榜时间线（Top 3）</h3>
   <p class="desc">兆易创新、通富微电、沪电股份在 2026 上半年的热榜出现节奏。</p>
   {charts.get('timeline', '<p>无数据</p>')}
+</div>
+
+<div class="chart">
+  <h3>热榜持续性、排名与融资余额</h3>
+  <p class="desc">精确列示热榜首次与最近日期、最佳排名、平台概念标签及融资余额变化。概念标签只代表平台命中记录，必须回到公司披露验证。</p>
+  <div class="table-wrap">{hotspot_detail_table(df)}</div>
+</div>
+
+<div class="chart">
+  <h3>热榜命中概念覆盖</h3>
+  <p class="desc">按出现过热榜的公司数计数，而非收入贡献或实际业务规模。该表用于发现需要核验的共同叙事。</p>
+  <div class="table-wrap">{concept_table(df)}</div>
 </div>
 
 <p class="footer">

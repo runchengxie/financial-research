@@ -11,17 +11,18 @@ Usage:
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 
 from . import data, report
 
 logging.basicConfig(level=logging.WARNING, format="%(levelname)s: %(message)s")
 
 
-def main() -> None:
+def build_screening_data():
+    """Build the merged 75-company research snapshot without writing files."""
     print("[1/5] Loading companies...")
     companies = data.load_company_list()
-    n = len(companies)
-    print(f"  {n} companies loaded")
+    print(f"  {len(companies)} companies loaded")
 
     print("[2/5] Computing PE/PB percentiles (3Y)...")
     pe_3y, pb_3y = data.compute_pe_pb_percentiles(companies)
@@ -73,10 +74,60 @@ def main() -> None:
     rpt["pe_pb_pattern"] = data.compute_pe_pb_divergence(rpt)
     rpt = rpt.merge(ar_inv, on="ts_code", how="left")
 
-    # Generate report
+    return rpt
+
+
+def _research_priority_score(row) -> int:
+    """Match the documented screening score without implying investment merit."""
+    score = int(row.get("diverge_score", 0) or 0) * 3
+    if row.get("consensus_tags", ""):
+        score += 1
+    if row.get("pe_3y_level") == ">p90":
+        score += 1
+    if row.get("pb_3y_level") == ">p90":
+        score += 1
+    if row.get("q1_cf_to_ni") is not None and row["q1_cf_to_ni"] < 0:
+        score += 1
+    if row.get("rz_to_float") is not None and row["rz_to_float"] > 0.05:
+        score += 1
+    return score
+
+
+def write_research_snapshot(rpt) -> None:
+    """Persist a dashboard-ready extract alongside the human-readable report."""
+    snapshot = rpt.copy()
+    snapshot["research_priority_score"] = snapshot.apply(_research_priority_score, axis=1)
+    snapshot["snapshot_generated_at"] = datetime.now().astimezone().isoformat(timespec="seconds")
+    snapshot["source_reference_date"] = data.get_reference_date()
+    snapshot["source_margin_date"] = data.get_margin_date()
+    snapshot["source_fin_date"] = data.get_fin_date()
+
+    columns = [
+        "company", "ts_code", "priority", "pe_ttm", "pb", "pe_3y_level",
+        "pb_3y_level", "pe_pb_pattern", "q1_net_income", "q1_oper_cf",
+        "q1_cf_to_ni", "ar_yoy", "inv_yoy", "ar_to_rev", "inv_to_rev",
+        "bs_warning", "rzye", "circ_mv_yuan", "rz_to_float", "hot_days",
+        "limit_events", "net_flow_yi", "hsgt_days", "margin_delta_yi",
+        "diverge_tags", "consensus_tags", "diverge_score",
+        "research_priority_score", "snapshot_generated_at", "source_reference_date",
+        "source_margin_date", "source_fin_date",
+    ]
+    available = [column for column in columns if column in snapshot.columns]
+    artifacts_dir = data.REPO_ROOT / "artifacts"
+    artifacts_dir.mkdir(exist_ok=True)
+    snapshot.loc[:, available].to_csv(
+        artifacts_dir / "research-snapshot.csv", index=False, encoding="utf-8"
+    )
+
+
+def main() -> None:
+    rpt = build_screening_data()
+
+    # Generate report and dashboard-ready snapshot.
     md = report.generate_report(rpt)
     out_path = data.REPO_ROOT / "docs/research/enhanced-screening-report.md"
     out_path.write_text(md, encoding="utf-8")
+    write_research_snapshot(rpt)
 
     # Summary
     n_pe = (rpt["pe_3y_level"] == ">p90").sum()
@@ -86,10 +137,11 @@ def main() -> None:
     n_dv = (rpt["diverge_score"] > 0).sum()
 
     print(f"\n[DONE] Report written to {out_path}")
-    print(f"  Total companies: {n}")
+    print(f"  Total companies: {len(rpt)}")
     print(f"  PE alerts: {n_pe}, PB alerts: {n_pb}")
     print(f"  CF warnings: {n_cf}, Margin high: {n_mg}")
     print(f"  Divergence signals: {n_dv}")
+    print(f"  Snapshot: {data.REPO_ROOT / 'artifacts/research-snapshot.csv'}")
 
 
 if __name__ == "__main__":

@@ -12,6 +12,7 @@
 - [`research/company-analysis-initial-screen.md`](research/company-analysis-initial-screen.md)：第一轮定量核验。
 - [`research/company-hotspot-analysis.md`](research/company-hotspot-analysis.md)：热点、资金流、沪深港通 Top10 交易活跃度与融资分析。
 - [`research/enhanced-screening-report.md`](research/enhanced-screening-report.md)：自动生成的增强初筛报告。
+- [`research/dashboard-data-contract.md`](research/dashboard-data-contract.md)：热点页与研究驾驶舱的数据字段、图表口径和刷新顺序。
 
 ## 第一轮专题
 

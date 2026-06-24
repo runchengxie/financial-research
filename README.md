@@ -39,6 +39,7 @@ artifacts/       可再生 HTML 等输出
 - `data/company-hotspot-data.csv`：80 家公司的概念快照、热榜命中、涨停、资金流、沪深港通 Top10 上榜次数和融资变化。
 - `src/financial_research/enhanced_screen/`：增强初筛的计算与 Markdown 生成逻辑。
 - `src/financial_research/hotspot_dashboard.py`：热度仪表盘生成逻辑。
+- `src/financial_research/research_cockpit.py`：研究驾驶舱生成逻辑，读取增强初筛快照。
 - `src/financial_research/bundle.py`：可分发 ZIP 包与 SHA-256 清单生成逻辑。
 - `artifacts/hotspot-dashboard.html`：最近一次生成的热点仪表盘。
 
@@ -63,6 +64,14 @@ python scripts/chart_hotspot.py
 ```
 
 输出为 `artifacts/hotspot-dashboard.html`。仪表盘把 `hsgt_top10` 解释为「沪深港通 Top10 上榜次数」；它不表示净买入、持仓变化或投资者身份。
+
+增强初筛运行后，再生成研究驾驶舱：
+
+```bash
+python scripts/chart_research.py
+```
+
+它读取 `artifacts/research-snapshot.csv`，输出 `artifacts/research-cockpit.html`。两页的指标边界、字段口径和图表用途见 [`docs/research/dashboard-data-contract.md`](docs/research/dashboard-data-contract.md)。
 
 ## 分发项目与数据
 

@@ -32,5 +32,6 @@
 
 - 增强初筛：从 market-data-platform venv 运行 `scripts/enhanced_screen.py`，输出 `docs/research/enhanced-screening-report.md`。
 - 热度仪表盘：运行 `python scripts/chart_hotspot.py`，确认 `artifacts/hotspot-dashboard.html` 正常写入。
+- 研究驾驶舱：增强初筛完成后运行 `python scripts/chart_research.py`，确认 `artifacts/research-cockpit.html` 与 `artifacts/research-snapshot.csv` 正常写入。
 - 初筛代码至少运行 `scripts/test_enhanced_screen.py` 冒烟核验。每次更新后至少运行一轮增强初筛和热度仪表盘。
 - 项目分发：运行 `python scripts/export_bundle.py --output-dir <目录>`；仅在需要接收者复跑增强初筛时添加 `--include-platform-assets`，并先运行 `--dry-run` 确认体积。
