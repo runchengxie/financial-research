@@ -21,8 +21,12 @@
 
 - `company-hotspot-data.csv`
   机器可读明细，含每家公司的概念快照、热榜命中日期、涨停次数、资金流和融资变化。
+- `scripts/enhanced_screen/`
+  增强初筛包，包含 `data.py`（计算函数）、`report.py`（报告生成）、`__init__.py`（入口编排）。
 - `scripts/enhanced_screen.py`
-  增强初筛脚本，从 market-data-platform 数据资产自动拉取估值分位、财务质量、融资数据和背离信号，输出 `enhanced-screening-report.md`。
+  薄入口脚本，直接调用 `enhanced_screen` 包。
+- `scripts/test_enhanced_screen.py`
+  冒烟测试，验证数据加载和核心计算函数。
 - `scripts/chart_hotspot.py`
   热度可视化脚本，读取 `company-hotspot-data.csv` 生成 SVG 图表，输出 `charts/hotspot-dashboard.html`。
 - `charts/hotspot-dashboard.html`
@@ -66,6 +70,13 @@ uv run --extra dev python ~/code/financial-research/scripts/enhanced_screen.py
 ```
 
 输出为仓库根目录的 `enhanced-screening-report.md`。
+
+### 冒烟测试
+
+```bash
+cd ~/code/research-workspace/market-data-platform
+uv run --extra dev python ~/code/financial-research/scripts/test_enhanced_screen.py
+```
 
 ### 热度仪表盘
 

@@ -1,19 +1,13 @@
 """Generate hotspot analysis SVG charts and HTML dashboard.
 
-Zero dependencies beyond Python stdlib + pandas.
 Usage: python scripts/chart_hotspot.py
 """
 
 import pandas as pd
 from pathlib import Path
-import json
-import base64
-import math
 
 ROOT = Path(__file__).resolve().parent.parent
 CSV_PATH = ROOT / "company-hotspot-data.csv"
-CHARTS_DIR = ROOT / "charts"
-CHARTS_DIR.mkdir(exist_ok=True)
 
 
 def load_data():
@@ -24,10 +18,6 @@ def load_data():
     df["margin_delta"] = pd.to_numeric(df["margin_delta_rz_wan"], errors="coerce").fillna(0)
     df["hsgt_days"] = pd.to_numeric(df["hsgt_top10_days"], errors="coerce").fillna(0).astype(int)
     return df
-
-
-def _html(text):
-    return str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 def svg_scatter(df):
@@ -67,7 +57,7 @@ def svg_scatter(df):
         if r["hot_days"] >= 20:
             labels.append(
                 f'<text x="{cx:.1f}" y="{cy - r_size - 3:.1f}" '
-                f'text-anchor="middle" font-size="8" fill="#2c3e50">{_html(r["company"])}</text>'
+                f'text-anchor="middle" font-size="8" fill="#2c3e50">{r["company"]}</text>'
             )
 
     # Axes
@@ -136,7 +126,7 @@ def svg_bar(df):
             f'<rect x="{ml}" y="{y:.0f}" width="{bw:.0f}" height="{bar_h}" '
             f'fill="{color}" fill-opacity="0.8" rx="2"/>'
             f'<text x="{ml - 5}" y="{y + bar_h/2 + 3:.0f}" text-anchor="end" '
-            f'font-size="9" fill="#2c3e50">{_html(r["company"])}</text>'
+            f'font-size="9" fill="#2c3e50">{r["company"]}</text>'
             f'<text x="{ml + bw + 5:.0f}" y="{y + bar_h/2 + 3:.0f}" '
             f'font-size="8" fill="#2c3e50">{r["composite"]:.0f}</text>'
         )
@@ -150,7 +140,7 @@ def svg_bar(df):
   <rect width="{W}" height="{H}" fill="white"/>
   <text x="{W/2:.0f}" y="15" text-anchor="middle" font-size="12" font-weight="bold" fill="#2c3e50">综合排名 Top 15</text>
   {bars_svg}
-  <text x="{W - mr}" y="{H - 2}" text-anchor="end" font-size="7" fill="#bdc3c7">得分 = 热榜天 + 涨停×3</text>
+  <text x="{W - mr}" y="{H - 2}" text-anchor="end" font-size="7" fill="#bdc3c7">得分 = 热榜天 + 涨停x3</text>
 </svg>'''
 
 
@@ -160,7 +150,6 @@ def svg_timeline(df):
     W, H = 700, 160
     ml, mr, mt, mb = 60, 20, 15, 30
 
-    # Parse dates
     all_dates = []
     company_pts = []
     colors = ["#e74c3c", "#3498db", "#2ecc71"]
@@ -190,7 +179,6 @@ def svg_timeline(df):
             cx = px(pd.Timestamp(pt))
             circles += f'<circle cx="{cx:.1f}" cy="{py(i):.0f}" r="4" fill="{color}" fill-opacity="0.6"/>'
 
-    # Month labels
     months = []
     cur = pd.Timestamp("2026-01-01")
     while cur <= t_max:
@@ -261,7 +249,7 @@ def build_html(df, charts):
 
 <div class="chart">
   <h3>综合排名 Top 15</h3>
-  <p class="desc">得分 = 热榜天数 + 涨停次数 × 3。红色柱为热榜天数 ≥ 30。</p>
+  <p class="desc">得分 = 热榜天数 + 涨停次数 x 3。红色柱为热榜天数 >= 30。</p>
   {charts.get('bar', '<p>无数据</p>')}
 </div>
 
@@ -297,7 +285,10 @@ def main():
             print(f"  [WARN] {name}: {e}")
 
     html = build_html(df, charts)
-    out = CHARTS_DIR / "hotspot-dashboard.html"
+
+    charts_dir = ROOT / "charts"
+    charts_dir.mkdir(exist_ok=True)
+    out = charts_dir / "hotspot-dashboard.html"
     out.write_text(html, encoding="utf-8")
     print(f"Dashboard: {out}")
     print(f"  Charts: {len(charts)} generated")
