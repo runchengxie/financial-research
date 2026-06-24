@@ -1,69 +1,91 @@
 # 金融研报核验仓库（电子行业 80 家样本）
 
-本仓库用于把一份 26Q2 电子行业研究草稿转成可复核的文本与数据资产，并提供一次性核验脚本。当前覆盖样本为 80 家公司，含 75 家 A 股代表和 5 家港股标的。
+本仓库将一份 26Q2 电子行业卖方研报转成可复核的文本与数据资产，支持多轮自动化核验。当前覆盖 80 家公司，含 75 家 A 股和 5 家港股。
 
 ## 当前文件与职责
 
-### 根目录说明文档
+### 核心分析文档
 
-- `company-analysis-todo.md`  
-  主研究清单，记录 P0 与 P1 两组目标公司的深度研究任务、任务模板与完成记录。
-- `company-analysis-initial-screen.md`  
-  第一轮定量核验结果，包含数据口径、缺失说明、初筛结论与待核验清单。
-- `company-hotspot-analysis.md`  
-  热点与资金流分析底稿，定义样本信号、主题分组、排序规则与优先研究依据。
-- `original-analytic-report.md`  
-  原始研报内容提取版本，保留原始观点结构，便于与新核验结果对照。
-- `company-hotspot-data.csv`  
-  可复用的机器可读明细，含概念快照、命中日期和热度指标。
-- `scripts/chart_hotspot.py`  
-  用于生成热度分析图表并输出 `charts/hotspot-dashboard.html` 的脚本。
-- `charts/hotspot-dashboard.html`  
-  最近一次可视化输出结果。
+- `company-analysis-todo.md`
+  主研究清单，含 P0/P1 优先级、深度研究任务模板与完成记录。模板已升级为 9 节，包含「市场共识与分歧」模块。
+- `company-analysis-initial-screen.md`
+  第一轮定量核验，覆盖行情、估值、最新财报和港股一手披露。说明数据口径、缺失情况和待核验项。
+- `company-hotspot-analysis.md`
+  热点与资金流分析底稿，包含热榜、涨停、资金流、北向、融资数据和概念快照。已加入背离信号框架。
+- `enhanced-screening-report.md`
+  增强初筛报告（由脚本自动生成）。覆盖 PE/PB 历史分位、PE/PB 背离分类、现金流质量、应收存货趋势、融资拥挤度和背离信号检测。
+- `original-analytic-report.md`
+  原始研报提取文本，保留原文结构和预测数字，用于与新核验结果对照。
 
-### 文档目录
+### 数据与脚本
 
-- `docs/README.md`  
-  说明文档入口与本仓库文档使用场景。  
+- `company-hotspot-data.csv`
+  机器可读明细，含每家公司的概念快照、热榜命中日期、涨停次数、资金流和融资变化。
+- `scripts/enhanced_screen.py`
+  增强初筛脚本，从 market-data-platform 数据资产自动拉取估值分位、财务质量、融资数据和背离信号，输出 `enhanced-screening-report.md`。
+- `scripts/chart_hotspot.py`
+  热度可视化脚本，读取 `company-hotspot-data.csv` 生成 SVG 图表，输出 `charts/hotspot-dashboard.html`。
+- `charts/hotspot-dashboard.html`
+  最近一次可视化仪表盘。
 
 ### 说明文件
 
-- `AGENTS.md`  
-  本仓库文档和复核约定。
-- `README.md`  
-  当前文件，说明项目范围、运行方式与测试情况。
+- `AGENTS.md`
+  文档写作规范与维护公约。
+- `README.md`
+  当前文件，说明项目范围、运行方式与核验流程。
+- `docs/README.md`
+  文档目录索引。
 
-## 数据来源与更新范围
+## 数据来源
 
-已落地的数据链路主要来自 TuShare 的同花顺系列接口：
+增强初筛涉及的数据资产均在 market-data-platform 内持久化，来源如下：
 
-- `ths_hot`、`ths_member`、`ths_index`
-- `limit_list_ths`
-- `moneyflow_ths`
-- `margin_detail`
-- `hsgt_top10`
+| 数据 | 平台资产 | TuShare 接口 |
+| --- | --- | --- |
+| 历史日线估值（PE/PB/市值） | `daily_basic` | `daily_basic` |
+| 标准化财务报表（利润/现金流/资产负债） | `normalized_fundamentals` | `income` / `cashflow` / `balancesheet` |
+| 融资融券明细 | `margin_detail` | `margin_detail` |
+| 同花顺热榜 | `ths_hot` | `ths_hot` |
+| 同花顺涨停明细 | `limit_list_ths` | `limit_list_ths` |
+| 同花顺资金流 | `moneyflow_ths` | `moneyflow_ths` |
+| 同花顺概念指数 | `ths_index` | `ths_index` |
+| 沪深港通十大成交 | `hsgt_top10` | `hsgt_top10` |
 
-其中部分资产在 `company-hotspot-analysis.md` 已注明已持久化状态和缺口。
+部分概念成分数据受限于代理接口不支持过滤查询，沿用初版 CSV 快照。
 
 ## 运行方式
 
-- 生成热点图表（需要 `pandas`）  
-  `python scripts/chart_hotspot.py`  
-  输出为 `charts/hotspot-dashboard.html`。未安装 `pandas` 时会直接报错并退出。
-- 读取/核验数据可先查看 `company-hotspot-data.csv`，再按 `company-hotspot-analysis.md` 的口径说明核对。
+### 增强初筛
 
-## 测试脚本与自动化检查
+从 market-data-platform 的 venv 运行，需要 `pandas`、`pyarrow`：
 
-当前仓库没有独立的自动化测试套件，仓库也未接入 `pytest`、`unittest`、`npm test` 等持续测试入口。  
+```bash
+cd ~/code/research-workspace/market-data-platform
+uv run --extra dev python ~/code/financial-research/scripts/enhanced_screen.py
+```
 
-建议在每次更新后做以下手动检查，替代自动化测试：
+输出为仓库根目录的 `enhanced-screening-report.md`。
 
-1. 先运行 `python scripts/chart_hotspot.py`，确认 `charts/hotspot-dashboard.html` 能生成且不报错。  
-2. 抽查 `company-analysis-initial-screen.md` 与 `company-hotspot-analysis.md` 中列出的关键字段是否与 `company-hotspot-data.csv` 对齐。  
-3. 核对原始来源链接可访问，补充核验日期并写入更新说明。
+### 热度仪表盘
 
-## 目前事实一致性说明
+需要 `pandas`：
 
-仓库目前是中文说明文档为主，代码文件仅一份图表脚本。  
-说明文档中新增了对“港股一手披露”与“A 股同花顺口径”边界的区分。  
-`company-analysis-todo.md` 与 `company-analysis-initial-screen.md` 已同步使用 `original-analytic-report.md` 作为原始来源文件，避免了已失效的 `analytic-report.md` 引用。
+```bash
+python scripts/chart_hotspot.py
+```
+
+输出为 `charts/hotspot-dashboard.html`。未安装 `pandas` 时直接报错退出。
+
+### 数据核验
+
+读取 `company-hotspot-data.csv` 后，按 `company-hotspot-analysis.md` 的口径说明核对字段和覆盖范围。
+
+## 手工核验清单
+
+仓库暂未接入自动化测试框架。每次更新后建议做以下检查：
+
+1. 运行 `python scripts/chart_hotspot.py`，确认仪表盘正常生成。
+2. 抽查 `company-analysis-initial-screen.md` 与 `company-hotspot-analysis.md` 中的字段是否与 `company-hotspot-data.csv` 对齐。
+3. 在原报告假设或市场数据更新后，重新运行 `scripts/enhanced_screen.py` 生成最新初筛报告。
+4. 核对原始来源链接可访问，补充核验日期。
