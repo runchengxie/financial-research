@@ -13,6 +13,8 @@ from __future__ import annotations
 import logging
 from datetime import datetime
 
+import pandas as pd
+
 from . import data, report
 
 logging.basicConfig(level=logging.WARNING, format="%(levelname)s: %(message)s")
@@ -79,16 +81,20 @@ def build_screening_data():
 
 def _research_priority_score(row) -> int:
     """Match the documented screening score without implying investment merit."""
-    score = int(row.get("diverge_score", 0) or 0) * 3
-    if row.get("consensus_tags", ""):
+    diverge_score = row.get("diverge_score", 0)
+    score = 0 if pd.isna(diverge_score) else int(diverge_score) * 3
+    consensus_tags = row.get("consensus_tags", "")
+    if isinstance(consensus_tags, str) and consensus_tags:
         score += 1
     if row.get("pe_3y_level") == ">p90":
         score += 1
     if row.get("pb_3y_level") == ">p90":
         score += 1
-    if row.get("q1_cf_to_ni") is not None and row["q1_cf_to_ni"] < 0:
+    cashflow_ratio = row.get("q1_cf_to_ni")
+    if cashflow_ratio is not None and cashflow_ratio == cashflow_ratio and cashflow_ratio < 0:
         score += 1
-    if row.get("rz_to_float") is not None and row["rz_to_float"] > 0.05:
+    margin_ratio = row.get("rz_to_float")
+    if margin_ratio is not None and margin_ratio == margin_ratio and margin_ratio > 0.05:
         score += 1
     return score
 

@@ -34,6 +34,13 @@ def _fmt_pct(value: object) -> str:
     return f"{float(value) * 100:.1f}%"
 
 
+def _display(value: object, fallback: str = "—") -> str:
+    if value is None or pd.isna(value):
+        return fallback
+    text = str(value).strip()
+    return text if text else fallback
+
+
 def _trim(value: object, limit: int = 38) -> str:
     text = "" if pd.isna(value) else str(value)
     return text if len(text) <= limit else text[:limit] + "…"
@@ -102,9 +109,9 @@ def risk_table(df: pd.DataFrame) -> str:
         rows.append(
             "<tr>"
             f"<td>{escape(str(row['company']))}</td>"
-            f"<td>{escape(str(row['priority']))}</td>"
+            f"<td>{escape(_display(row['priority']))}</td>"
             f"<td>{int(row['research_priority_score'])}</td>"
-            f"<td>{escape(str(row.get('pe_3y_level') or '—'))} / {escape(str(row.get('pb_3y_level') or '—'))}</td>"
+            f"<td>{escape(_display(row.get('pe_3y_level')))} / {escape(_display(row.get('pb_3y_level')))}</td>"
             f"<td>{_fmt_ratio(row.get('q1_cf_to_ni'))}</td>"
             f"<td>{_fmt_pct(row.get('rz_to_float'))}</td>"
             f"<td>{escape(_trim(row.get('bs_warning')) or '—')}</td>"

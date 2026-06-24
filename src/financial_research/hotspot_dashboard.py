@@ -13,6 +13,14 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 CSV_PATH = REPO_ROOT / "data/company-hotspot-data.csv"
 
 
+def _display(value: object, fallback: str = "—") -> str:
+    """Format one scalar safely for HTML tables."""
+    if value is None or pd.isna(value):
+        return fallback
+    text = str(value).strip()
+    return text if text else fallback
+
+
 def load_data():
     df = pd.read_csv(CSV_PATH)
     df["hot_days"] = pd.to_numeric(df["hot_days_2026_ytd"], errors="coerce").fillna(0).astype(int)
@@ -260,7 +268,7 @@ def hotspot_detail_table(df: pd.DataFrame) -> str:
         return "<p>无热榜命中记录。</p>"
     rows = []
     for _, row in active.iterrows():
-        concepts = str(row.get("hot_entry_concepts") or "").replace("|", "、")
+        concepts = _display(row.get("hot_entry_concepts"), "").replace("|", "、")
         if len(concepts) > 42:
             concepts = concepts[:42] + "…"
         best_rank = "—" if pd.isna(row["best_rank"]) else f"#{int(row['best_rank'])}"
@@ -268,8 +276,8 @@ def hotspot_detail_table(df: pd.DataFrame) -> str:
             "<tr>"
             f"<td>{escape(str(row['company']))}</td>"
             f"<td>{row['hot_days']}</td>"
-            f"<td>{escape(str(row.get('first_hot_date') or '—'))}</td>"
-            f"<td>{escape(str(row.get('latest_hot_date') or '—'))}</td>"
+            f"<td>{escape(_display(row.get('first_hot_date')))}</td>"
+            f"<td>{escape(_display(row.get('latest_hot_date')))}</td>"
             f"<td>{best_rank}</td>"
             f"<td>{escape(concepts or '—')}</td>"
             f"<td>{row['margin_first'] / 1e8:.1f} → {row['margin_last'] / 1e8:.1f}</td>"
@@ -308,6 +316,7 @@ def build_html(df, charts):
     total_hsgt = int(df["hsgt_days"].sum())
     n_limit_companies = int((df["limit_events"] > 0).sum())
     n_net_inflow = int((df["total_net"] > 0).sum())
+    timeline_companies = "、".join(df.nlargest(3, "hot_days")["company"].astype(str))
 
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
@@ -336,7 +345,7 @@ def build_html(df, charts):
 </style>
 </head>
 <body>
-<h1>电子行业 80 家公司热点仪表盘</h1>
+<h1>电子行业 {n_total} 家公司热点仪表盘</h1>
 <p class="subtitle">数据窗口：2026-01-01 至 2026-06-23 · 数据源：TuShare 同花顺系列接口</p>
 
 <div class="stats">
@@ -369,7 +378,7 @@ def build_html(df, charts):
 
 <div class="chart">
   <h3>热榜时间线（Top 3）</h3>
-  <p class="desc">兆易创新、通富微电、沪电股份在 2026 上半年的热榜出现节奏。</p>
+  <p class="desc">{escape(timeline_companies)} 在 2026 上半年的热榜出现节奏。</p>
   {charts.get('timeline', '<p>无数据</p>')}
 </div>
 

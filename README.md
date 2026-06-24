@@ -53,9 +53,10 @@ artifacts/       可再生 HTML 等输出
 cd ~/code/research-workspace/market-data-platform
 uv run --extra dev python ~/code/financial-research/scripts/test_enhanced_screen.py
 uv run --extra dev python ~/code/financial-research/scripts/enhanced_screen.py
+uv run --extra dev python ~/code/financial-research/scripts/test_dashboards.py
 ```
 
-增强初筛输出到 `docs/research/enhanced-screening-report.md`。
+增强初筛输出到 `docs/research/enhanced-screening-report.md`，并写入 `artifacts/research-snapshot.csv`。`test_dashboards.py` 会验证热点页的新增字段以及研究驾驶舱依赖的快照结构。
 
 生成热点仪表盘：
 

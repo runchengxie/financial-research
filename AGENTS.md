@@ -6,7 +6,7 @@
 
 ## 项目状态
 
-- 仓库以研究核验文档和辅助脚本为主，未按 Python 包结构组织。
+- 仓库以研究核验文档为主；可复用逻辑收敛在轻量 Python 包 `src/financial_research/`，命令入口保留在 `scripts/`。
 - 样本规模 80 家公司，当前口径以 2026-06-24 前后状态为准。
 - 增强初筛数据来自 market-data-platform 中已持久化的 `daily_basic`、`normalized_fundamentals`、`margin_detail` 等资产；热点数据来自 `ths_hot`、`limit_list_ths`、`moneyflow_ths` 等同花顺系列接口。部分概念成分沿用 CSV 快照。
 - `docs/archive/` 存放原始材料，`docs/research/` 存放研究底稿与自动报告，`data/` 存放可分发输入，`src/financial_research/` 存放业务逻辑，`scripts/` 仅保留命令入口，`artifacts/` 仅存放可再生输出。
@@ -33,5 +33,5 @@
 - 增强初筛：从 market-data-platform venv 运行 `scripts/enhanced_screen.py`，输出 `docs/research/enhanced-screening-report.md`。
 - 热度仪表盘：运行 `python scripts/chart_hotspot.py`，确认 `artifacts/hotspot-dashboard.html` 正常写入。
 - 研究驾驶舱：增强初筛完成后运行 `python scripts/chart_research.py`，确认 `artifacts/research-cockpit.html` 与 `artifacts/research-snapshot.csv` 正常写入。
-- 初筛代码至少运行 `scripts/test_enhanced_screen.py` 冒烟核验。每次更新后至少运行一轮增强初筛和热度仪表盘。
+- 初筛与仪表盘代码至少运行 `scripts/test_enhanced_screen.py`、`scripts/test_dashboards.py` 冒烟核验。每次更新后至少运行一轮增强初筛和热度仪表盘。
 - 项目分发：运行 `python scripts/export_bundle.py --output-dir <目录>`；仅在需要接收者复跑增强初筛时添加 `--include-platform-assets`，并先运行 `--dry-run` 确认体积。
