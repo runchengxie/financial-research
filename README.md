@@ -1,8 +1,8 @@
-# Financial Research → 已迁移至 [daily-messenger](https://github.com/runchengxie/daily-messenger)
+# Financial Research → 已迁移至 [market-intel](https://github.com/runchengxie/market-intel)
 
-> **本仓库的所有分析模块已于 2026-06-28 迁入 [daily-messenger](https://github.com/runchengxie/daily-messenger) 的 `a_share_analysis` 子包。**
+> **本仓库的所有分析模块已于 2026-06-28 迁入 [market-intel](https://github.com/runchengxie/market-intel) 的 `a_share_analysis` 子包。**
 >
-> daily-messenger 是统一的 A 股分析工具基座：ETL → 评分 → 日报 → 因子分析 → 飞书推送。迁移后的模块自带依赖管理、CLI 入口和 cron 调度，不再需要手动挂 venv。
+> market-intel 是统一的 A 股市场情报基座：ETL → 评分 → 因子分析 → 日报 → 飞书推送。迁移后的模块自带依赖管理、CLI 入口和 cron 调度。
 >
 > 本仓库保留为历史存档，**不再接受新提交**。原始电子行业研报核验部分已删除。
 
